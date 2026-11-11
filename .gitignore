@@ -1,0 +1,40 @@
+# Build output
+target/
+*.class
+mvn-distro/
+.mvn/maven-distro/
+
+# Local runtime state of the range
+logs/
+*.pid
+run/*.log
+
+# ---------------------------------------------------------------------------
+# Secrets and key material: these must NEVER be committed, even in a demo
+# project. The m08 module generates its throw-away keystore into the OS temp
+# directory precisely so that it can never be committed by accident.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+*.env
+*.p12
+*.jks
+*.keystore
+*.pkcs12
+id_rsa
+id_ed25519
+*.pem
+*.key
+vault-token
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Scanner output
+dependency-check-report.*
+semgrep-report.*
+zap_report.*
+sast-results/

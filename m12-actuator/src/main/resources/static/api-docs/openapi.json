@@ -1,0 +1,18 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ESPD subscription API (published description, intentionally reachable)",
+    "version": "1.0.0"
+  },
+  "servers": [{"url": "http://127.0.0.1:8092"}],
+  "paths": {
+    "/api/orders": {
+      "get": {"summary": "List orders", "responses": {"200": {"description": "orders"}}}
+    },
+    "/vuln12/debug/reset-cache": {
+      "post": {"summary": "Operational endpoint that someone documented here as well",
+               "responses": {"200": {"description": "ok"}}}
+    }
+  },
+  "x-vulnrange-note": "A complete endpoint map, including internal and debug routes, served unauthenticated in the default profile. Attackers do not guess endpoints when this file is public."
+}

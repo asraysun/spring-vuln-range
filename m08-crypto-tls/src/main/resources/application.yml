@@ -1,0 +1,19 @@
+server:
+  port: 8088
+  address: 127.0.0.1
+
+vulnrange:
+  https:
+    port: 8443
+  safe:
+    # Injected from Vault / env. Leave empty for local runs: an ephemeral key is generated and
+    # /safe8/selftest reports keySource=ephemeral-generated-at-startup.
+    data-key: ${RANGE_M08_DATA_KEY:}
+
+spring:
+  application:
+    name: m08-crypto-tls
+
+logging:
+  level:
+    root: INFO

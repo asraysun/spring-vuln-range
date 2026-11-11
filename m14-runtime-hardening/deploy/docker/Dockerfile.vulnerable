@@ -1,0 +1,14 @@
+# VULNERABLE ON PURPOSE: the runtime image shape that turns a request-level bug into a pod takeover.
+# Problems: root user, full OS with shell and package manager, mutable tag, no digest, no health probe,
+# secrets baked into the image layer.
+FROM eclipse-temurin:21-jdk
+
+ENV DB_PASSWORD=placeholder-not-a-real-credential
+# Build context: the module directory. Build the jar first:
+#   ./mvnw -DskipTests -pl m14-runtime-hardening package
+#   docker build -f deploy/docker/Dockerfile.vulnerable -t vulnrange/m14:vulnerable .
+COPY target/*.jar /app/app.jar
+WORKDIR /app
+EXPOSE 8094
+# Runs as root, has a shell, a compiler and a package manager available at runtime.
+CMD ["java", "-jar", "/app/app.jar"]

@@ -1,0 +1,59 @@
+# DEFAULT PROFILE: deliberately over-exposed. Compare with application-safe.yml.
+server:
+  port: 8092
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m12-actuator
+  # VULNERABLE (intentional): the SQL/HTTP console is enabled "temporarily" and shipped.
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  datasource:
+    url: jdbc:h2:mem:m12
+    username: sa
+    password: ""
+
+management:
+  endpoints:
+    web:
+      # VULNERABLE (intentional): every web endpoint, on the same port as the public API.
+      exposure:
+        include: '*'
+      base-path: /actuator
+  endpoint:
+    health:
+      # VULNERABLE: component details (DB product/version, disk paths, mail hosts) for anonymous callers.
+      show-details: always
+      show-components: always
+    env:
+      # VULNERABLE: property sources including datasources, tokens, feature flags.
+      show-values: always
+    heapdump:
+      enabled: true
+    configprops:
+      show-values: always
+    shutdown:
+      # VULNERABLE: remote stop button on the public port.
+      enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+info:
+  build:
+    name: m12-actuator
+    version: 1.0.0
+    # VULNERABLE: internal repository URL, branch and commit published to anonymous callers.
+    scm: "ssh://git@git.internal/espd/m12-actuator.git"
+    branch: main
+
+logging:
+  level:
+    root: INFO

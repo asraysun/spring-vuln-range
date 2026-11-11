@@ -1,0 +1,48 @@
+server:
+  port: 8083
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m03-secrets-config
+  datasource:
+    # VULNERABLE (intentional): in-memory H2 datasource so the console is reachable over HTTP.
+    # Without this, /h2-console/ returns 404 — the demo can't demonstrate the vulnerability.
+    url: jdbc:h2:mem:espd;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  h2:
+    console:
+      # VULNERABLE (intentional): an SQL console enabled by default in this demo service.
+      # In a real service this must be false everywhere except a local developer profile.
+      enabled: true
+      path: /h2-console
+
+vulnrange:
+  legacy:
+    # VULNERABLE (intentional): repository defaults that silently become the runtime credential.
+    # Values below are synthetic placeholders taken from public documentation.
+    espd-api-key: AKIAIOSFODNN7EXAMPLE
+    db-url: jdbc:postgresql://postgres-dev:5432/espd
+    db-password: postgres
+    encryption-key: 0123456789abcdef
+  safe:
+    # Reference shape: names and placeholders only. Material arrives from a mounted Vault-Agent
+    # file or an injected env var; if it is missing the service refuses to serve the integration.
+    db-url: ${RANGE_M03_DB_URL:}
+    db-user: ${RANGE_M03_DB_USER:}
+    db-password: ${RANGE_M03_DB_PASSWORD:}
+    file-secrets-dir: ${RANGE_M03_SECRETS_DIR:}
+    env-var-name: RANGE_M03_ESPD_API_KEY
+    # Demo-only: never used in production. When set, the safe endpoints work locally without
+    # Vault/K8s mounts. In production this must be absent so the service fails closed.
+    demo-secret: DEMO-KEY-FOR-LOCAL-RUNS-ONLY
+    prod-config-uses-placeholders: "true"
+
+logging:
+  level:
+    root: INFO
+  logback:
+    rollingpolicy:
+      # Checklist 9: logs are a data store; keep retention short and scrub content, not just size.
+      max-history: 2

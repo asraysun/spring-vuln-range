@@ -1,0 +1,13 @@
+server:
+  port: 8086
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m06-deserialization
+  mvc:
+    log-request-details: false   # request bodies here contain crafted payloads, not audit data
+
+logging:
+  level:
+    root: INFO

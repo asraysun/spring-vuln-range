@@ -1,0 +1,68 @@
+# VULNERABLE ON PURPOSE — the shape that gets copied from a quick-start guide.
+# Every problem here is called out in the hardened manifest next door and in docs/14-runtime-hardening.md.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: espd-m14-vulnerable
+  namespace: vulnrange
+  labels:
+    app: espd-m14
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: espd-m14
+  template:
+    metadata:
+      labels:
+        app: espd-m14
+    spec:
+      # PROBLEM: token is mounted for every pod, so any SSRF/file-read can call the API server.
+      automountServiceAccountToken: true
+      containers:
+        - name: app
+          # PROBLEM: mutable tag; you cannot tell what is running after a re-push.
+          image: registry.example.org/espd/m14-runtime-hardening:latest
+          imagePullPolicy: Always
+          # PROBLEM: runs as root, can escalate, privileged, host namespaces reachable.
+          securityContext: {}
+          ports:
+            - containerPort: 8094
+          env:
+            # PROBLEM: credential in plain env (visible in ps, /proc/<pid>/environ, describe output).
+            - name: DB_PASSWORD
+              value: "placeholder-not-a-real-credential"
+            # PROBLEM: one credential for dev/ift/prod.
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              # PROBLEM: writable config mount -> poisoning primitive.
+        - name: sidecar-debug
+          # PROBLEM: privileged debug container with the host mounted.
+          image: busybox:1.36
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: host-root
+              mountPath: /host
+      volumes:
+        - name: config
+          emptyDir: {}
+        - name: host-root
+          hostPath:
+            path: /
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: espd-m14-vulnerable
+  namespace: vulnrange
+spec:
+  selector:
+    app: espd-m14
+  ports:
+    - port: 80
+      targetPort: 8094
+---
+# PROBLEM: no NetworkPolicy at all -> every pod in the cluster can reach this pod and everything it
+# can reach (metadata service, databases, other teams' admin ports).

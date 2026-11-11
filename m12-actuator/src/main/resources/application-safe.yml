@@ -1,0 +1,55 @@
+# SAFE PROFILE: java -jar m12-actuator-1.0.0.jar --spring.profiles.active=safe
+server:
+  port: 8092
+  address: 127.0.0.1
+
+spring:
+  h2:
+    console:
+      enabled: false
+
+management:
+  server:
+    # Management traffic on its own loopback port: not routable from the ingress that serves :8092.
+    port: 8192
+    address: 127.0.0.1
+  endpoints:
+    web:
+      # Only what a probe and a dashboard actually need.
+      exposure:
+        include: 'health,info'
+      base-path: /actuator
+  endpoint:
+    health:
+      # Liveness stays anonymous and uninformative; details require an authenticated caller.
+      show-details: never
+      show-components: never
+      status:
+        http-mapping:
+          down: 503
+    env:
+      enabled: false
+    configprops:
+      enabled: false
+    heapdump:
+      enabled: false
+    threaddump:
+      enabled: false
+    loggers:
+      enabled: false
+    shutdown:
+      # Never on a reachable port; if you need it, put it behind a break-glass channel.
+      enabled: false
+  info:
+    env:
+      enabled: false
+
+info:
+  # Build metadata that is fine for an internal dashboard, nothing that maps your estate.
+  app:
+    name: m12-actuator
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO

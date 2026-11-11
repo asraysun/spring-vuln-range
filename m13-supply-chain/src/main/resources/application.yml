@@ -1,0 +1,13 @@
+server:
+  port: 8093
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m13-supply-chain
+  mvc:
+    log-request-details: false
+
+logging:
+  level:
+    root: INFO

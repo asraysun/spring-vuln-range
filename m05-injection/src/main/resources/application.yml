@@ -1,0 +1,32 @@
+server:
+  port: 8085
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m05-injection
+  datasource:
+    url: jdbc:h2:mem:espd;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    # Empty on purpose: the range has no external DB, and a real service must never ship one.
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    # Views must not hold transactions open; the safe endpoints use @Transactional explicitly.
+    open-in-view: false
+    # Required so that data.sql runs AFTER Hibernate creates the schema.
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
+  sql:
+    init:
+      mode: always
+      continue-on-error: false
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: DEBUG

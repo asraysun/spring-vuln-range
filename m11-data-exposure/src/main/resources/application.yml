@@ -1,0 +1,27 @@
+server:
+  port: 8091
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m11-data-exposure
+  datasource:
+    url: jdbc:h2:mem:exposure;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    defer-datasource-initialization: true
+    # Kept at the Boot default on purpose: it hides LazyInitializationException in the vulnerable
+    # endpoints, which is precisely why the entity-as-response pattern survives in real codebases.
+    # Turn it off for /safe11 work: the safe endpoints never touch a lazy proxy.
+    open-in-view: true
+  sql:
+    init:
+      mode: always
+
+logging:
+  level:
+    root: INFO

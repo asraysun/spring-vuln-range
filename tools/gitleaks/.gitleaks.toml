@@ -1,0 +1,49 @@
+# gitleaks configuration for this repository.
+#
+# Note what is NOT here: an allowlist entry for the placeholder values in m03-secrets-config.
+# Those literals exist so that the scanner has something to find — a secret scanner that is
+# configured to stay quiet "because the demo has fake keys" is the same scanner that will stay
+# quiet about a real one.
+title = "spring-vuln-range gitleaks config"
+
+[extend]
+# Start from the upstream rule set (AWS/GCP/GitHub/Slack/JWT/private keys...) and add local rules.
+useDefault = true
+
+[allowlist]
+description = "paths that legitimately contain no secrets"
+paths = [
+  '''sast-results/.*''',
+  '''\.mvn/maven-distro/.*''',
+  '''logs/.*''',
+  '''docs/.*''',
+  '''README\.md'''
+]
+# Deliberately no value allowlist for source files: the placeholder literals in
+# m03-secrets-config and m16-verification are EXPECTED findings. If gitleaks reports nothing there,
+# the scanner is not looking - and that is a worse outcome than a noisy pipeline.
+
+
+[[rules]]
+id = "spring-property-credential"
+description = "credential assigned to a Spring property in a committed file"
+regex = '''(?i)(password|secret|api[-_]?key|access[-_]?token)\s*[:=]\s*['"]?[A-Za-z0-9/+=._\-]{12,}'''
+keywords = ["password", "secret", "api_key", "apikey", "token"]
+
+[[rules]]
+id = "jwt-secret-in-config"
+description = "JWT/HMAC signing secret in configuration"
+regex = '''(?i)(jwt[-_.]?(secret|key)|signing[-_.]?key)\s*[:=]\s*['"]?[A-Za-z0-9/+=._\-]{8,}'''
+keywords = ["jwt", "signing", "secret", "hmac"]
+
+[[rules]]
+id = "private-key-block"
+description = "PEM private key or PKCS material"
+regex = '''-----BEGIN (RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----'''
+keywords = ["private key"]
+
+[[rules]]
+id = "basic-auth-in-url"
+description = "credentials embedded in a URL (also leaked through logs and referrers)"
+regex = '''[a-z][a-z0-9+.-]*://[^/\s:]+:[^@\s/]{4,}@'''
+keywords = ["://"]

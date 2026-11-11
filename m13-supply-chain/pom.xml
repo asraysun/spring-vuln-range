@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  m13-supply-chain: checklist section 13 (dependencies and build integrity).
+
+  This module carries INTENTIONALLY VULNERABLE dependency versions so that SCA tooling has real
+  findings to report, and so that the "gadget available on the classpath" property can be shown
+  rather than described. Never copy this dependency block into a service you operate.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.example.vulnrange</groupId>
+    <artifactId>spring-vuln-range</artifactId>
+    <version>1.0.0</version>
+  </parent>
+
+  <artifactId>m13-supply-chain</artifactId>
+  <name>m13-supply-chain</name>
+  <description>Checklist 13: vulnerable pinned dependencies, deserialization gadgets present on the classpath, fastjson autotype; SCA gate and ObjectInputFilter mitigation</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- VULNERABLE ON PURPOSE: deserialization gadget classes (InvokerTransformer, ...) on the
+         classpath. Its invariants bypass (CVE-2015-6420) was closed in 3.2.2, but 3.2.1 is the
+         release that ysoserial's CommonsCollections chains are built against — the gadget is the
+         risk, and SCA will flag it. -->
+    <dependency>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
+    </dependency>
+
+    <!-- VULNERABLE ON PURPOSE: fastjson 1.2.x autotype family (CWE-502, many CVEs). -->
+    <dependency>
+      <groupId>com.alibaba</groupId>
+      <artifactId>fastjson</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Run the supply-chain gate with:  ./mvnw -Psca -pl m13-supply-chain verify
+        or use scripts/run_sca.sh, which also writes a report into sast-results/.
+        The build FAILS here by design: this module is the negative test for the gate.
+      -->
+      <plugin>
+        <groupId>org.owasp</groupId>
+        <artifactId>dependency-check-maven</artifactId>
+        <version>10.0.4</version>
+        <configuration>
+          <failBuildOnCVSS>7</failBuildOnCVSS>
+          <formats>
+            <format>HTML</format>
+            <format>JSON</format>
+          </formats>
+          <outputDirectory>${project.basedir}/../sast-results/dependency-check</outputDirectory>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!--
+      Profile guard for the gate: the plugin above is declared without executions, so a normal
+      ./mvnw package does NOT pay for (or fail on) a vulnerability database download. Only -Psca runs it.
+    -->
+    <profile>
+      <id>sca</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.owasp</groupId>
+            <artifactId>dependency-check-maven</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- Baseline (fixed) versions of the same two libraries, used by /safe13 to show the upgrade path. -->
+    <profile>
+      <id>baseline-upgrades</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-collections4</artifactId>
+          <version>4.4</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

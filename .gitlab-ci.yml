@@ -1,0 +1,64 @@
+# GitLab CI equivalent of .github/workflows/security.yml — same idea, same gates.
+# The vulnerable modules are expected to FAIL their gates; that is the calibration test.
+stages:
+  - build
+  - secret-scan
+  - sast
+  - sca
+  - dast
+
+default:
+  image: maven:3.9-eclipse-temurin-21
+
+build:
+  stage: build
+  script:
+    - ./mvnw -B -DskipTests package
+    - ./mvnw -B -pl m16-verification test
+
+secret-scan:
+  stage: secret-scan
+  image: zricethezav/gitleaks:latest
+  script:
+    - gitleaks detect --source . --config tools/gitleaks/.gitleaks.toml --redact --exit-code 1
+
+sast-semgrep:
+  stage: sast
+  image: returntocorp/semgrep:latest
+  script:
+    - semgrep scan --config tools/semgrep/spring-security-rules.yml --error --metrics=off .
+
+sast-spotbugs:
+  stage: sast
+  script:
+    # Expected to report findings on the m16 fixtures; the job records them as an artifact.
+    - ./mvnw -B -Psast -pl m16-verification verify || true
+  artifacts:
+    paths:
+      - sast-results/
+
+sca-dependency-check:
+  stage: sca
+  script:
+    # Intentionally fails: m13 ships commons-collections 3.2.1 and fastjson 1.2.24.
+    - ./mvnw -B -pl m13-supply-chain org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7
+  allow_failure: false
+  artifacts:
+    when: always
+    paths:
+      - sast-results/dependency-check/
+
+sca-trivy:
+  stage: sca
+  image: aquasec/trivy:latest
+  script:
+    - trivy fs --severity CRITICAL,HIGH --exit-code 1 .
+
+dast-zap:
+  stage: dast
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  script:
+    - ./mvnw -q -DskipTests package
+    - scripts/run-all.sh
+    - bash scripts/run_dast_zap.sh http://127.0.0.1:8081

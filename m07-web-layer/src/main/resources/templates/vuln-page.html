@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<!--
+  VULNERABLE (intentional): th:utext emits the value as raw markup, and the page carries no CSP.
+  Compare with safe-page.html, which uses th:text for exactly the same data.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8"/>
+  <title>m07 vulnerable page</title>
+</head>
+<body>
+<h1>Hello, <span th:utext="${name}">operator</span></h1>
+
+<h2>Operator notes</h2>
+<ul>
+  <li th:each="note : ${notes}" th:utext="${note}">note</li>
+</ul>
+
+<p>
+  Reproduce: <code>GET /vuln7/page?name=&lt;img src=x onerror=alert(document.cookie)&gt;</code>
+  — the value reaches the DOM as markup, not as text.
+</p>
+</body>
+</html>

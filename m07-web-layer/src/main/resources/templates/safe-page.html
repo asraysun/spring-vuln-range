@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<!--
+  Reference: every dynamic value is emitted with th:text, so the template engine performs the
+  escaping. CSP (set in WebLayerSecurityConfig) is the second layer: even if a raw payload slips
+  through somewhere else, inline script execution is refused by the browser.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8"/>
+  <title>m07 safe page</title>
+</head>
+<body>
+<h1>Hello, <span th:text="${name}">operator</span></h1>
+
+<h2>Operator notes</h2>
+<ul>
+  <li th:each="note : ${notes}" th:text="${note}">note</li>
+</ul>
+
+<p>
+  The same payload as the vulnerable page is rendered as visible text:
+  <code>GET /safe7/page?name=&lt;img src=x onerror=alert(1)&gt;</code>
+</p>
+</body>
+</html>

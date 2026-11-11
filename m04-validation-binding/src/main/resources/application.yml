@@ -1,0 +1,28 @@
+server:
+  port: 8084
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m04-validation-binding
+  jackson:
+    deserialization:
+      # Default is true (fail on unknown). The vulnerable controller explicitly disables this
+      # via a Jackson module so that extra JSON fields silently populate entity properties.
+      fail-on-unknown-properties: true
+  servlet:
+    multipart:
+      # VULNERABLE (intentional): a container-wide 1 GB limit with no per-endpoint check is not a
+      # limit. /safe4 enforces 2 MB plus content checks; production should do both, container first.
+      max-file-size: 1GB
+      max-request-size: 1GB
+      enabled: true
+  mvc:
+    # VULNERABLE default kept for the demonstration; must be false unless a form truly needs _method.
+    hiddenmethod:
+      filter:
+        enabled: false
+
+logging:
+  level:
+    root: INFO

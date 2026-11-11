@@ -1,0 +1,17 @@
+server:
+  port: 8090
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m10-ssrf-webhooks
+
+vulnrange:
+  safe:
+    # Synthetic local value so the PoC can sign a valid webhook. In a real deployment this is a
+    # Vault/KMS value shared with the payment provider and never present in the repository.
+    webhook-secret: ${RANGE_M10_WEBHOOK_SECRET:local-demo-webhook-secret-not-a-real-credential}
+
+logging:
+  level:
+    root: INFO

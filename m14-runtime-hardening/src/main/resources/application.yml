@@ -1,0 +1,11 @@
+server:
+  port: 8094
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m14-runtime-hardening
+
+logging:
+  level:
+    root: INFO

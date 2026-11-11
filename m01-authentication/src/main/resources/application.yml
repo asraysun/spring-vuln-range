@@ -1,0 +1,37 @@
+server:
+  port: 8081
+  # Safety control: loopback only. Never remove; see README "Read this before you run anything".
+  address: 127.0.0.1
+  servlet:
+    session:
+      cookie:
+        name: VULN1SESSION
+        # VULNERABLE on purpose (checklist 1: cookie flags). /safe1 relies on the container
+        # defaults plus explicit rotation; in production these must be true / strict.
+        http-only: false
+        secure: false
+        same-site: lax
+      timeout: 30m
+
+spring:
+  application:
+    name: m01-authentication
+  mvc:
+    problemdetails:
+      enabled: false
+
+vulnrange:
+  m01:
+    # VULNERABLE on purpose: dictionary secret, used to demonstrate HMAC key recovery.
+    # The real key must come from Vault / env (see RANGE_M01_TOKEN_KEY below) - this value is a
+    # synthetic placeholder and is not used by /safe1.
+    jwt-weak-secret: secret
+    # Injected at runtime, e.g. RANGE_M01_TOKEN_KEY=$(vault kv get -field=key secret/m01) ./mvnw ...
+    token-key: ${RANGE_M01_TOKEN_KEY:}
+
+logging:
+  level:
+    root: INFO
+    com.example.vulnrange: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"

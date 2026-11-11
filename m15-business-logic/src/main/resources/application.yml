@@ -1,0 +1,13 @@
+server:
+  port: 8095
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m15-business-logic
+
+logging:
+  level:
+    root: INFO
+    # Business-rule violations must be visible in the log, not only in the audit endpoint.
+    com.example.vulnrange.m15: WARN

@@ -1,0 +1,13 @@
+server:
+  port: 8082
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m02-authorization
+
+logging:
+  level:
+    root: INFO
+    # Verbose security logging is a debugging aid, not a production setting (checklist 9).
+    org.springframework.security: INFO

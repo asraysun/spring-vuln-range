@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Example of how a dependency-check suppression entry SHOULD look: named, dated, owned and revisited.
+  Note that the intentionally vulnerable libraries in m13-supply-chain are deliberately NOT suppressed:
+  the module exists to prove the gate fails when it should.
+
+  Rules for using this file in a real project:
+   * one entry per finding, never a blanket "exclude all of commons-*";
+   * mandatory fields: why it is acceptable, who accepted it, when it expires;
+   * an expired suppression must fail the build, otherwise it becomes a permanent mute button.
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+  <suppress until="2026-01-01Z">
+    <notes><![CDATA[
+      Template only - this entry matches nothing in this repository.
+      file name: example:not-used:1.2.3
+      why: the affected code path is unreachable (the class is not on the runtime classpath)
+      accepted by: AppSec review 2025-11-02, ticket SEC-1234
+      revisit: 2026-01-01 or on upgrade
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/example/not-used@.*$</packageUrl>
+    <cve>CVE-0000-0000</cve>
+  </suppress>
+
+</suppressions>

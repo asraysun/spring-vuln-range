@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ INTENTIONALLY VULNERABLE - EDUCATIONAL TEST RANGE.
+  ~ Do not deploy anywhere reachable from a network. See README.md.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.16</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.example.vulnrange</groupId>
+  <artifactId>spring-vuln-range</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <name>spring-vuln-range</name>
+  <description>Deliberately vulnerable Spring Boot microservices used to demonstrate, reproduce and fix the items of SECURITY_CHECKLIST.md</description>
+
+  <properties>
+    <java.version>21</java.version>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Pinned ON PURPOSE: these are the dependency versions used by m13-supply-chain so that SCA
+         tooling (dependency-check / Trivy / Snyk) has something real to find.
+         fastjson 1.2.24 is inside the known autoType/deserialization CVE range.
+         commons-collections 3.2.1 is the LAST release of the 3.2.x line: it carries the
+         de-serialization gadget classes (InvokerTransformer and friends) that make up the
+         ysoserial "CommonsCollections" chains. It is NOT 3.2.1's own CVE-2015-6420 that matters
+         here (that invariant-typing bypass was fixed in 3.2.2) — what matters is the gadget on
+         the classpath. Fix = replace with commons-collections4 4.4 (see the baseline-upgrades
+         profile) and stop deserializing untrusted bytes.
+         Never copy this dependency block into a real service. -->
+    <vulnerable.commons-collections.version>3.2.1</vulnerable.commons-collections.version>
+    <vulnerable.fastjson.version>1.2.24</vulnerable.fastjson.version>
+    <xstream.version>1.4.21</xstream.version>
+  </properties>
+
+  <modules>
+    <module>m01-authentication</module>
+    <module>m02-authorization</module>
+    <module>m03-secrets-config</module>
+    <module>m04-validation-binding</module>
+    <module>m05-injection</module>
+    <module>m06-deserialization</module>
+    <module>m07-web-layer</module>
+    <module>m08-crypto-tls</module>
+    <module>m09-logging-errors</module>
+    <module>m10-ssrf-webhooks</module>
+    <module>m11-data-exposure</module>
+    <module>m12-actuator</module>
+    <module>m13-supply-chain</module>
+    <module>m14-runtime-hardening</module>
+    <module>m15-business-logic</module>
+    <module>m16-verification</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>${vulnerable.commons-collections.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>fastjson</artifactId>
+        <version>${vulnerable.fastjson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.thoughtworks.xstream</groupId>
+        <artifactId>xstream</artifactId>
+        <version>${xstream.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <configuration>
+            <!-- Fail fast if someone starts a module on a non-loopback address by accident. -->
+            <jvmArguments>-Dspring-boot.run.jmx-enabled=false</jvmArguments>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>repackage</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

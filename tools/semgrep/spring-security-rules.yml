@@ -1,0 +1,255 @@
+# Local Semgrep rules for Spring services. Point your CI at this file (semgrep --config <this file>);
+# it should report findings in m01-m16. If it reports nothing, the SAST stage is decorative.
+rules:
+  - id: spring-sql-string-concatenation
+    languages: [java]
+    severity: ERROR
+    message: SQL statement is built by concatenating request data; use bound parameters (CWE-89)
+    metadata:
+      cwe: CWE-89
+      checklist: "5"
+    patterns:
+      - pattern-either:
+          - pattern: $JDBC.queryForList("..." + $X + "...", ...)
+          - pattern: $JDBC.query("..." + $X + "...", ...)
+          - pattern: $JDBC.update("..." + $X + "...", ...)
+          - pattern: $EM.createNativeQuery("..." + $X + "...")
+          - pattern: $EM.createQuery("..." + $X + "...")
+
+  - id: spring-csrf-disabled
+    languages: [java]
+    severity: ERROR
+    message: CSRF protection disabled; acceptable only for stateless token APIs, and then per matcher (CWE-352)
+    metadata:
+      cwe: CWE-352
+      checklist: "7"
+    pattern-either:
+      - pattern: $HTTP.csrf(csrf -> csrf.disable())
+      - pattern: $HTTP.csrf().disable()
+
+  - id: spring-cors-wildcard-with-credentials
+    languages: [java]
+    severity: ERROR
+    message: wildcard origin combined with allowCredentials(true) lets any site read authenticated responses (CWE-942)
+    metadata:
+      cwe: CWE-942
+      checklist: "7"
+    patterns:
+      - pattern-either:
+          - pattern: $C.setAllowedOriginPatterns(java.util.List.of("*"))
+          - pattern: $C.setAllowedOrigins(java.util.List.of("*"))
+      - pattern-inside: |
+          $M(...) {
+            ...
+            $C.setAllowCredentials(true);
+            ...
+          }
+
+  - id: spring-security-headers-disabled
+    languages: [java]
+    severity: WARNING
+    message: security response headers switched off (CSP, nosniff, frame protection, HSTS) (CWE-693)
+    metadata:
+      cwe: CWE-693
+      checklist: "7"
+    pattern-either:
+      - pattern: $HTTP.headers(headers -> headers.disable())
+      - pattern: $HTTP.headers().disable()
+
+  - id: spring-security-ignoring-bypass
+    languages: [java]
+    severity: ERROR
+    message: WebSecurityCustomizer ignoring() removes the filter chain (auth, CSRF, headers) for the matched paths
+    metadata:
+      cwe: CWE-1188
+      checklist: "2"
+    pattern-either:
+      - pattern: $W.ignoring().requestMatchers(...)
+      - pattern: $W.ignoring().antMatchers(...)
+
+  - id: java-deserialization-of-untrusted-bytes
+    languages: [java]
+    severity: ERROR
+    message: readObject on data that comes from outside the process; use a schema-validated format or ObjectInputFilter (CWE-502)
+    metadata:
+      cwe: CWE-502
+      checklist: "6"
+    patterns:
+      - pattern: (ObjectInputStream $IN).readObject()
+      - pattern-not-inside: |
+          $IN.setObjectFilter(...);
+          ...
+
+  - id: jackson-polymorphic-typing-enabled
+    languages: [java]
+    severity: ERROR
+    message: Jackson default typing lets the payload choose the class to instantiate (CWE-502)
+    metadata:
+      cwe: CWE-502
+      checklist: "6"
+    pattern-either:
+      - pattern: $MAPPER.enableDefaultTyping(...)
+      - pattern: $MAPPER.activateDefaultTyping(...)
+
+  - id: fastjson-autotype-enabled
+    languages: [java]
+    severity: ERROR
+    message: fastjson autoType turns JSON parsing into arbitrary object creation (CWE-502)
+    metadata:
+      cwe: CWE-502
+      checklist: "6, 13"
+    pattern: $CONFIG.setAutoTypeSupport(true)
+
+  - id: xxe-parser-without-hardening
+    languages: [java]
+    severity: ERROR
+    message: DocumentBuilderFactory used without disallow-doctype-decl / external-entity features (CWE-611)
+    metadata:
+      cwe: CWE-611
+      checklist: "6"
+    patterns:
+      - pattern: DocumentBuilderFactory.newInstance()
+      - pattern-not-inside: |
+          $F.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+          ...
+
+  - id: weak-message-digest-for-security
+    languages: [java]
+    severity: ERROR
+    message: MD5/SHA-1 used for a security purpose; use Argon2id/BCrypt for passwords (CWE-327, CWE-326)
+    metadata:
+      cwe: CWE-327
+      checklist: "1, 8"
+    pattern-either:
+      - pattern: MessageDigest.getInstance("MD5")
+      - pattern: MessageDigest.getInstance("SHA-1")
+
+  - id: unauthenticated-cipher-mode
+    languages: [java]
+    severity: ERROR
+    message: "CBC without a MAC, or ECB: the ciphertext is malleable or leaks structure; use AES-GCM (CWE-327)"
+    metadata:
+      cwe: CWE-327
+      checklist: "8"
+    pattern-either:
+      - pattern: Cipher.getInstance("AES/ECB/PKCS5Padding")
+      - pattern: Cipher.getInstance("AES/CBC/PKCS5Padding")
+
+  - id: insecure-cookie-flags
+    languages: [java]
+    severity: WARNING
+    message: session or token cookie without HttpOnly/Secure (CWE-1004, CWE-614)
+    metadata:
+      cwe: CWE-1004
+      checklist: "1"
+    pattern-either:
+      - pattern: $COOKIE.setHttpOnly(false)
+      - pattern: $COOKIE.setSecure(false)
+
+  - id: trust-all-x509-trust-manager
+    languages: [java]
+    severity: ERROR
+    message: custom TrustManager that accepts any certificate disables TLS protection (CWE-295)
+    metadata:
+      cwe: CWE-295
+      checklist: "8"
+    patterns:
+      - pattern-regex: "class\\s+\\w+[^{]*X509TrustManager[^{]*\\{"
+      - pattern-not-regex: "throw new"
+
+  - id: hostname-verification-disabled
+    languages: [java]
+    severity: ERROR
+    message: hostname verifier that always returns true (CWE-295)
+    metadata:
+      cwe: CWE-295
+      checklist: "8"
+    pattern-either:
+      - pattern-regex: "setHostnameVerifier\\(\\s*\\([^)]*\\)\\s*->\\s*true"
+      - pattern-regex: "public\\s+boolean\\s+verify\\([^)]*\\)\\s*\\{\\s*return\\s+true"
+
+  - id: path-resolution-from-request-without-containment
+    languages: [java]
+    severity: ERROR
+    message: file path built from request data without canonical containment check (CWE-22)
+    metadata:
+      cwe: CWE-22
+      checklist: "4"
+    patterns:
+      - pattern-either:
+          - pattern: $ROOT.resolve($REQ.get...)
+          - pattern: Paths.get($A, $B)
+      - pattern-not-inside: |
+          ...
+          $P.normalize();
+          ...
+          $P.startsWith(...);
+
+  - id: hardcoded-credential-literal
+    languages: [generic]
+    severity: ERROR
+    message: credential-shaped literal in source (CWE-798)
+    metadata:
+      cwe: CWE-798
+      checklist: "3"
+    pattern-regex: "(?i)(api[_-]?key|secret|password|token)\\s*[:=]\\s*[\"'][A-Za-z0-9/+=._-]{12,}[\"']"
+
+  - id: actuator-all-endpoints-exposed
+    languages: [yaml]
+    severity: ERROR
+    message: all actuator endpoints exposed on the web port (CWE-200)
+    metadata:
+      cwe: CWE-200
+      checklist: "12"
+    patterns:
+      - pattern-regex: "include:\\s*['\"]?\\*"
+    paths:
+      include:
+        - "*.yml"
+        - "*.yaml"
+
+  - id: verbose-error-responses-enabled
+    languages: [yaml]
+    severity: WARNING
+    message: stack traces or exception messages enabled in HTTP responses (CWE-209)
+    metadata:
+      cwe: CWE-209
+      checklist: "9"
+    pattern-either:
+      - pattern-regex: "include-stacktrace:\\s*always"
+      - pattern-regex: "include-message:\\s*always"
+      - pattern-regex: "include-exception:\\s*true"
+
+  - id: ssrf-url-from-request
+    languages: [java]
+    severity: ERROR
+    message: outbound request built from a caller-supplied URL without an allow-list (CWE-918)
+    metadata:
+      cwe: CWE-918
+      checklist: "10"
+    pattern-either:
+      - pattern: $RT.getForObject($URL, ...)
+      - pattern: $RT.postForObject($URL, ...)
+    paths:
+      include:
+        - "*vuln*"
+
+  - id: vacuous-method-security
+    languages: [java]
+    severity: WARNING
+    message: "@PreAuthorize(\"isAuthenticated()\") proves identity, not permission on the object (CWE-863)"
+    metadata:
+      cwe: CWE-863
+      checklist: "2"
+    pattern-regex: "@PreAuthorize\\(\\s*\"isAuthenticated\\(\\)\"\\s*\\)"
+
+  - id: unvalidated-redirect
+    languages: [java]
+    severity: ERROR
+    message: redirect target taken from a request parameter (CWE-601)
+    metadata:
+      cwe: CWE-601
+      checklist: "4"
+    pattern-either:
+      - pattern: new RedirectView($URL)
+      - pattern-regex: "\"redirect:\"\\s*\\+"

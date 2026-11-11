@@ -1,0 +1,188 @@
+# Reference manifest: the same application with the platform controls in place.
+# Diff it against vulnerable-deployment.yaml; that diff is most of checklist section 14.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: espd-m14
+  namespace: vulnrange
+# Reference: the pod does not need the cluster API at all, so it does not get a token.
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: espd-m14-hardened
+  namespace: vulnrange
+  labels:
+    app: espd-m14
+    app.kubernetes.io/part-of: vulnrange
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: espd-m14
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: espd-m14
+        app.kubernetes.io/part-of: vulnrange
+    spec:
+      serviceAccountName: espd-m14
+      automountServiceAccountToken: false
+      # Reference: a security profile for the whole pod, not per container "where someone remembered".
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: espd-m14
+      containers:
+        - name: app
+          # Reference: immutable digest of a minimal (ideally distroless) image.
+          image: registry.example.org/espd/m14-runtime-hardening@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8094
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          # Reference: container-level lockdown that survives a pod-level mistake.
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: >-
+                -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+                -Djava.net.preferIPv4Stack=true
+            # Reference: no secret material in the manifest; the file is mounted by the secret
+            # provider (Vault Agent injector), or the value comes from an external secret store.
+            - name: RANGE_M14_CONFIG_DIR
+              value: /mnt/config
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /mnt/config
+              readOnly: true
+          startupProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
+      terminationGracePeriodSeconds: 45
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: config
+          secret:
+            secretName: espd-m14-config
+            defaultMode: 0440
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: espd-m14
+  namespace: vulnrange
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: espd-m14
+---
+# Reference: default-deny for this pod, then exactly the edges it needs.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: espd-m14-default-deny
+  namespace: vulnrange
+spec:
+  podSelector:
+    matchLabels:
+      app: espd-m14
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: espd-m14-allowed-edges
+  namespace: vulnrange
+spec:
+  podSelector:
+    matchLabels:
+      app: espd-m14
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only the gateway namespace may call the service.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-gateway
+      ports:
+        - protocol: TCP
+          port: 8094
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # The one internal service this application calls. Note what is NOT here: the metadata
+    # service, other teams' admin ports, arbitrary outbound 443.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: espd-core
+          podSelector:
+            matchLabels:
+              app: espd-gateway
+      ports:
+        - protocol: TCP
+          port: 8443

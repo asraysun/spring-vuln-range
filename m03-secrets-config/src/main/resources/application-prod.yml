@@ -1,0 +1,35 @@
+# Production-shaped profile kept in the repository ON PURPOSE as a positive example:
+# it contains zero credential material. Every value is a placeholder resolved at runtime by
+# Vault Agent / the Kubernetes secret volume / the CI secret store.
+#
+# Contrast with application.yml, whose `vulnrange.legacy.*` block is the anti-pattern.
+server:
+  address: 127.0.0.1
+
+spring:
+  h2:
+    console:
+      enabled: false      # no SQL console in prod, in any profile, ever
+  datasource:
+    url: ${RANGE_M03_DB_URL}
+    username: ${RANGE_M03_DB_USER}
+    # Placeholder, not a fallback: a missing variable must fail startup, not fall back to dev.
+    password: ${RANGE_M03_DB_PASSWORD}
+
+vulnrange:
+  safe:
+    file-secrets-dir: /vault/secrets
+    env-var-name: RANGE_M03_ESPD_API_KEY
+
+management:
+  endpoint:
+    env:
+      # Even when /env is not exposed, keep values behind the standard sanitisation.
+      show-values: never
+    configprops:
+      show-values: never
+
+logging:
+  level:
+    root: INFO
+    com.example.vulnrange: INFO

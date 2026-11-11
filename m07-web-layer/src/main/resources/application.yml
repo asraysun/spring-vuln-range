@@ -1,0 +1,20 @@
+server:
+  port: 8087
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m07-web-layer
+  thymeleaf:
+    cache: false
+    # VULNERABLE (intentional, and the Boot default): [[...]] inside inline <script> blocks is
+    # evaluated as an expression. Keep it false in production unless inline scripting is required.
+    javascript-inlining: true
+  mvc:
+    problemdetails:
+      enabled: false
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO
