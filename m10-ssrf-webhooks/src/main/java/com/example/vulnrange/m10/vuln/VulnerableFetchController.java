@@ -42,7 +42,7 @@ public class VulnerableFetchController {
      */
     @PostMapping("/fetch")
     public Map<String, Object> fetch(@RequestBody Map<String, String> body) {
-        String url = body.getOrDefault("url", "http://127.0.0.1:8090/vuln10/internal-admin/users");
+        String url = body.getOrDefault("url", "http://127.0.0.1:8090/vuln10/index");
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("requested", url);
         try {

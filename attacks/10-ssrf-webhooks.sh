@@ -28,7 +28,11 @@ req POST "${PORT}" "/safe10/fetch" "{\"url\":\"http://127.0.0.1:${PORT}/vuln10/r
 # -----------------------------------------------------------------------------------------------
 title "4. Fetch-and-store: SSRF plus an unbounded write"
 req POST "${PORT}" "/vuln10/avatar" "{\"url\":\"http://127.0.0.1:${PORT}/vuln10/imds/latest/meta-data/iam/security-credentials\"}"
+printf '  file present on disk -> '
+if [ -f /tmp/vulnrange-m10-avatar.bin ]; then echo "yes"; else echo "no"; fi
 note "Attacker-chosen bytes are now a file on the server, with no type or size check."
+note "On a hardened deployment this write would be blocked by readOnlyRootFilesystem + tmpfs."
+note "Reference implementation has no /safe10/avatar endpoint — outbound fetches are bounded."
 
 # -----------------------------------------------------------------------------------------------
 title "5. No timeouts: one slow upstream occupies a request thread"

@@ -40,6 +40,12 @@
     <vulnerable.fastjson.version>1.2.24</vulnerable.fastjson.version>
     <xstream.version>1.4.21</xstream.version>
   </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+  </dependencies>
 
   <modules>
     <module>m01-authentication</module>
@@ -58,6 +64,7 @@
     <module>m14-runtime-hardening</module>
     <module>m15-business-logic</module>
     <module>m16-verification</module>
+    <module>m17-spring4shell</module>
   </modules>
 
   <dependencyManagement>

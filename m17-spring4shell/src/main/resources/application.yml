@@ -1,0 +1,16 @@
+server:
+  port: 8097
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: m17-spring4shell
+
+# Disable command execution by default (enable with -Dvulnrange.m17.allow-exec=true)
+vulnrange:
+  m17:
+    allow-exec: false
+
+logging:
+  level:
+    root: INFO

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  m17-spring4shell: checklist section 17 (Spring4Shell / CVE-2022-22965).
+
+  This module demonstrates the Spring Data Binding vulnerability that allows
+  Remote Code Execution (RCE) through malicious request parameters.
+
+  CVE-2022-22965 affects Spring Framework 5.3.0 - 5.3.17 and 6.0.0 - 6.0.2.
+  The vulnerability is triggered when Spring MVC binds user-supplied parameters
+  to a model object via DataBinder, allowing an attacker to access arbitrary
+  Java classes through the classLoader property.
+
+  This is a DELIBERATELY VULNERABLE educational demo. Never run this in production.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.example.vulnrange</groupId>
+    <artifactId>spring-vuln-range</artifactId>
+    <version>1.0.0</version>
+  </parent>
+
+  <artifactId>m17-spring4shell</artifactId>
+  <name>m17-spring4shell</name>
+  <description>Checklist 17: Spring4Shell (CVE-2022-22965) — RCE via Spring Data Binding</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -14,6 +14,11 @@ run/*.log
 # project. The m08 module generates its throw-away keystore into the OS temp
 # directory precisely so that it can never be committed by accident.
 # ---------------------------------------------------------------------------
+.gigacode
+.gigaide
+.mvn
+.github
+.gitlab-ci.yml
 .env
 .env.*
 *.env
